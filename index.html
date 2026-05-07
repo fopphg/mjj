@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍽️ استطلاع رأي غداء اليوم</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --amber: #f59e0b;
+    --orange: #ea580c;
+    --red: #dc2626;
+    --warm: #fef3c7;
+    --glass: rgba(255,255,255,0.12);
+    --glass-border: rgba(255,255,255,0.25);
+    --shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  html, body {
+    height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: linear-gradient(135deg, #7c2d12 0%, #9a3412 20%, #c2410c 45%, #d97706 70%, #b45309 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 20px;
+  }
+
+  /* Animated background blobs */
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.35;
+    pointer-events: none;
+    animation: blobFloat 8s ease-in-out infinite alternate;
+  }
+  .blob-1 { width: 400px; height: 400px; background: #fbbf24; top: -100px; left: -100px; animation-delay: 0s; }
+  .blob-2 { width: 300px; height: 300px; background: #ef4444; bottom: -80px; right: -80px; animation-delay: 2s; }
+  .blob-3 { width: 250px; height: 250px; background: #f97316; top: 40%; left: 60%; animation-delay: 4s; }
+  @keyframes blobFloat {
+    from { transform: translate(0,0) scale(1); }
+    to   { transform: translate(30px, -30px) scale(1.1); }
+  }
+
+  /* Floating food emojis */
+  .food-bg { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .food-emoji {
+    position: absolute;
+    font-size: clamp(1.2rem, 3vw, 2.2rem);
+    opacity: 0.18;
+    animation: floatUp linear infinite;
+    user-select: none;
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+    10%  { opacity: 0.18; }
+    90%  { opacity: 0.18; }
+    100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+  }
+
+  /* Main card */
+  .card {
+    position: relative;
+    z-index: 10;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 28px;
+    padding: clamp(28px, 6vw, 56px);
+    max-width: 620px;
+    width: 100%;
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.3);
+    animation: fadeSlideIn 0.8s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(40px) scale(.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .main-title {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 900;
+    color: #fff;
+    text-align: center;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+  .sub-title {
+    font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+    color: #fde68a;
+    text-align: center;
+    margin-bottom: 36px;
+    font-weight: 600;
+  }
+
+  .buttons-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Base button style */
+  .choice-btn {
+    position: relative;
+    width: 100%;
+    padding: 22px 28px;
+    border: none;
+    border-radius: 18px;
+    font-family: 'Cairo', sans-serif;
+    font-size: clamp(1.1rem, 3vw, 1.35rem);
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    letter-spacing: 0.5px;
+    overflow: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .choice-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.08);
+    opacity: 0;
+    transition: opacity 0.2s;
+    border-radius: inherit;
+  }
+  .choice-btn:hover::before { opacity: 1; }
+
+  /* Mahshi button — always wins */
+  .btn-mahshi {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,0.3);
+  }
+  .btn-mahshi:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 12px 30px rgba(22,163,74,0.5); }
+  .btn-mahshi:active { transform: scale(.98); }
+
+  /* Koshari button — runner */
+  .btn-koshari {
+    background: linear-gradient(135deg, #b45309, #92400e);
+    color: #fef3c7;
+    border: 2px solid rgba(255,220,100,0.3);
+    position: fixed !important;
+    transition: left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1), opacity 0.2s;
+    z-index: 999;
+    width: 280px !important;
+  }
+
+  /* Samak button — runner */
+  .btn-samak {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    color: #dbeafe;
+    border: 2px solid rgba(150,200,255,0.3);
+    position: fixed !important;
+    transition: left 0.22s cubic-bezier(.22,1,.36,1), top 0.22s cubic-bezier(.22,1,.36,1), opacity 0.2s;
+    z-index: 999;
+    width: 280px !important;
+  }
+
+  /* Escape message tooltip */
+  .escape-msg {
+    position: fixed;
+    z-index: 1000;
+    background: rgba(0,0,0,0.82);
+    color: #fde68a;
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 10px 18px;
+    border-radius: 40px;
+    pointer-events: none;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(0);
+    transition: opacity 0.2s;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .escape-msg.show { opacity: 1; }
+
+  /* Confetti canvas */
+  #confettiCanvas {
+    position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+  }
+
+  /* Popup overlay */
+  .popup-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s;
+  }
+  .popup-overlay.active { opacity: 1; pointer-events: all; }
+
+  .popup-box {
+    background: linear-gradient(145deg, #064e3b, #065f46);
+    border: 2px solid rgba(52,211,153,0.4);
+    border-radius: 24px;
+    padding: 40px 36px;
+    max-width: 440px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    transform: scale(0.8) translateY(30px);
+    transition: transform 0.4s cubic-bezier(.22,1,.36,1);
+  }
+  .popup-overlay.active .popup-box { transform: scale(1) translateY(0); }
+
+  .popup-icon { font-size: 4rem; margin-bottom: 16px; display: block; animation: popBounce 0.5s .3s both cubic-bezier(.22,1,.36,1); }
+  @keyframes popBounce { from { transform: scale(0) rotate(-20deg); } to { transform: scale(1) rotate(0); } }
+
+  .popup-title {
+    font-size: 1.4rem; font-weight: 900; color: #d1fae5; margin-bottom: 12px;
+  }
+  .popup-msg {
+    font-size: 1.05rem; color: #a7f3d0; font-weight: 600; line-height: 1.6; margin-bottom: 28px;
+  }
+  .popup-close {
+    background: linear-gradient(135deg, #059669, #047857);
+    color: #fff; border: none; border-radius: 40px;
+    padding: 14px 36px; font-family: 'Cairo', sans-serif;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(5,150,105,0.5);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .popup-close:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(5,150,105,0.6); }
+
+  /* Responsive fix — keep placeholders in grid */
+  .btn-placeholder {
+    height: 72px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.04);
+    border: 2px dashed rgba(255,255,255,0.12);
+  }
+</style>
+</head>
+<body>
+
+<!-- Background blobs -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<!-- Floating food emojis -->
+<div class="food-bg" id="foodBg"></div>
+
+<!-- Confetti canvas -->
+<canvas id="confettiCanvas"></canvas>
+
+<!-- Escape tooltip -->
+<div class="escape-msg" id="escapeMsg"></div>
+
+<!-- Popup -->
+<div class="popup-overlay" id="popup">
+  <div class="popup-box">
+    <span class="popup-icon">🎉</span>
+    <div class="popup-title">✅ تم الاعتماد رسمياً!</div>
+    <div class="popup-msg">اختيار ممتاز يا صديقي!<br>تم اعتماد <strong>المحشي والبط 🦆</strong><br>كغداء رسمي لهذا اليوم 😂🎊</div>
+    <button class="popup-close" onclick="closePopup()">عظيم! 🙌</button>
+  </div>
+</div>
+
+<!-- Main card -->
+<div class="card" id="mainCard">
+  <div class="main-title">🍽️ استطلاع رأي غداء اليوم</div>
+  <div class="sub-title">اختار الغداء اللي نفسك فيه 😋</div>
+
+  <div class="buttons-grid" id="btnGrid">
+    <button class="choice-btn btn-mahshi" onclick="winnerClick()">
+      🦆 محشي مع بط
+    </button>
+    <!-- placeholders for layout -->
+    <div class="btn-placeholder"></div>
+    <div class="btn-placeholder"></div>
+  </div>
+</div>
+
+<!-- Floating runner buttons (outside card, fixed positioned) -->
+<button class="choice-btn btn-koshari" id="btnKoshari">
+  🍜 كشري
+</button>
+<button class="choice-btn btn-samak" id="btnSamak">
+  🐟 سمك
+</button>
+
+<script>
+// ─── Floating food emojis ───────────────────────────────────────────────────
+const emojis = ['🍽️','🦆','🥗','🍜','🐟','🧅','🍅','🌿','🍋','🧄','🫙','🥘'];
+const bg = document.getElementById('foodBg');
+function spawnEmoji() {
+  const el = document.createElement('div');
+  el.className = 'food-emoji';
+  el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+  el.style.left = Math.random() * 100 + 'vw';
+  const dur = 9 + Math.random() * 10;
+  el.style.animationDuration = dur + 's';
+  el.style.animationDelay = Math.random() * -dur + 's';
+  el.style.fontSize = (1.2 + Math.random() * 1.2) + 'rem';
+  bg.appendChild(el);
+  setTimeout(() => el.remove(), (dur + 2) * 1000);
+}
+for (let i = 0; i < 18; i++) spawnEmoji();
+setInterval(spawnEmoji, 1800);
+
+// ─── Runner buttons setup ────────────────────────────────────────────────────
+const btnK = document.getElementById('btnKoshari');
+const btnS = document.getElementById('btnSamak');
+const escMsg = document.getElementById('escapeMsg');
+let msgTimer = null;
+
+const escapeLines = [
+  '😆 لا لا اختار المحشي!',
+  '🚫 الاختيار ده غير متاح النهارده',
+  '🏃 مش هتقدر توصلني!',
+  '😂 روح العب بعيد!',
+  '🙅 محشي وبس يا صاحبي!',
+  '⚡ الكشري اتخلص!',
+  '🦆 البط بيسلم عليك!',
+  '🤣 حاول تاني... أو متحاولش!',
+];
+let lastLine = -1;
+function randomLine() {
+  let idx;
+  do { idx = Math.floor(Math.random() * escapeLines.length); } while (idx === lastLine);
+  lastLine = idx;
+  return escapeLines[idx];
+}
+
+function getRandomPos(btn) {
+  const w = btn.offsetWidth || 280;
+  const h = btn.offsetHeight || 68;
+  const margin = 16;
+  const maxX = window.innerWidth - w - margin;
+  const maxY = window.innerHeight - h - margin;
+  return {
+    x: margin + Math.random() * maxX,
+    y: margin + Math.random() * maxY,
+  };
+}
+
+function placeRandom(btn) {
+  const pos = getRandomPos(btn);
+  btn.style.left = pos.x + 'px';
+  btn.style.top  = pos.y + 'px';
+}
+
+function runAway(btn, event) {
+  placeRandom(btn);
+  const line = randomLine();
+  // position tooltip near cursor or touch
+  let cx = event.clientX || (event.touches && event.touches[0] ? event.touches[0].clientX : window.innerWidth / 2);
+  let cy = event.clientY || (event.touches && event.touches[0] ? event.touches[0].clientY : window.innerHeight / 2);
+  escMsg.textContent = line;
+  escMsg.style.left = Math.min(cx + 10, window.innerWidth - 260) + 'px';
+  escMsg.style.top  = Math.max(cy - 50, 8) + 'px';
+  escMsg.classList.add('show');
+  clearTimeout(msgTimer);
+  msgTimer = setTimeout(() => escMsg.classList.remove('show'), 1400);
+}
+
+// Initial placement
+function initButtons() {
+  const margin = 20;
+  // Koshari — top-right area
+  btnK.style.left = (window.innerWidth - 300 - margin) + 'px';
+  btnK.style.top  = (80) + 'px';
+  // Samak — bottom-left area
+  btnS.style.left = (margin) + 'px';
+  btnS.style.top  = (window.innerHeight - 120) + 'px';
+}
+initButtons();
+window.addEventListener('resize', initButtons);
+
+// Desktop: mouseover triggers escape
+btnK.addEventListener('mouseover', (e) => runAway(btnK, e));
+btnS.addEventListener('mouseover', (e) => runAway(btnS, e));
+// Mobile: touchstart triggers escape
+btnK.addEventListener('touchstart', (e) => { e.preventDefault(); runAway(btnK, e); }, { passive: false });
+btnS.addEventListener('touchstart', (e) => { e.preventDefault(); runAway(btnS, e); }, { passive: false });
+// Also on click (just in case they somehow hit it)
+btnK.addEventListener('click', (e) => { e.preventDefault(); runAway(btnK, e); });
+btnS.addEventListener('click', (e) => { e.preventDefault(); runAway(btnS, e); });
+
+// ─── Confetti ────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('confettiCanvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let animId = null;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function launchConfetti() {
+  particles = [];
+  for (let i = 0; i < 160; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 200,
+      r: 4 + Math.random() * 7,
+      d: 2 + Math.random() * 4,
+      color: ['#fbbf24','#f87171','#34d399','#60a5fa','#f472b6','#a78bfa','#fb923c'][Math.floor(Math.random()*7)],
+      tilt: Math.random() * 10 - 5,
+      tiltSpeed: 0.05 + Math.random() * 0.1,
+      angle: 0,
+      speed: 1.5 + Math.random() * 3,
+      spin: (Math.random() - 0.5) * 0.3,
+      shape: Math.random() > 0.5 ? 'rect' : 'circle',
+    });
+  }
+  if (animId) cancelAnimationFrame(animId);
+  drawConfetti();
+  setTimeout(stopConfetti, 4000);
+}
+
+function drawConfetti() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  let alive = false;
+  particles.forEach(p => {
+    p.y += p.speed;
+    p.tilt += p.tiltSpeed;
+    p.angle += p.spin;
+    if (p.y < canvas.height + 20) alive = true;
+    ctx.save();
+    ctx.translate(p.x + p.tilt, p.y);
+    ctx.rotate(p.angle);
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = 0.9;
+    if (p.shape === 'circle') {
+      ctx.beginPath(); ctx.arc(0,0,p.r,0,Math.PI*2); ctx.fill();
+    } else {
+      ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.6);
+    }
+    ctx.restore();
+    p.x += Math.sin(p.tilt * 0.5);
+  });
+  if (alive) animId = requestAnimationFrame(drawConfetti);
+}
+
+function stopConfetti() {
+  cancelAnimationFrame(animId);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+// ─── Winner click ────────────────────────────────────────────────────────────
+function winnerClick() {
+  launchConfetti();
+  document.getElementById('popup').classList.add('active');
+}
+
+function closePopup() {
+  document.getElementById('popup').classList.remove('active');
+  stopConfetti();
+}
+
+// Close on overlay click
+document.getElementById('popup').addEventListener('click', function(e) {
+  if (e.target === this) closePopup();
+});
+</script>
+</body>
+</html>
